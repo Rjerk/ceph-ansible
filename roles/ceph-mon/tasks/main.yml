@@ -28,3 +28,8 @@
   include_tasks: crush_rules.yml
   when:
     - crush_rule_config
+
+- name: include configure_ceph_command_aliases.yml
+  include_tasks: configure_ceph_command_aliases.yml
+  when:
+    - containerized_deployment

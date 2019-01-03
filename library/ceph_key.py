@@ -481,13 +481,8 @@ def lookup_ceph_initial_entities(module, out):
         fatal("'auth_dump' key not present in json output:", module)  # noqa E501
 
     if len(entities) != len(CEPH_INITIAL_KEYS):
-        # must be missing in auth_dump, as if it were in CEPH_INITIAL_KEYS
-        # it'd be in entities from the above test. Report what's missing.
-        missing = []
-        for e in CEPH_INITIAL_KEYS:
-            if e not in entities:
-                missing.append(e)
-        fatal("initial keyring does not contain keys: " + ' '.join(missing), module)
+        return None
+
     return entities
 
 
@@ -655,6 +650,8 @@ def run_module():
             module.exit_json(**result)
 
         entities = lookup_ceph_initial_entities(module, out)
+        if entities is None:
+            fatal("Failed to find some of the initial entities", module)
 
         output_format = "plain"
         for entity in entities:

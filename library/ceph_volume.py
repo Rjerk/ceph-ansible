@@ -3,7 +3,6 @@ import datetime
 import copy
 import json
 import os
-import six
 
 ANSIBLE_METADATA = {
     'metadata_version': '1.0',
@@ -37,9 +36,9 @@ options:
         default: bluestore
     action:
         description:
-            - The action to take. Creating OSDs and zapping or querying devices.
+            - The action to take. Either creating OSDs or zapping devices.
         required: true
-        choices: ['create', 'zap', 'batch', 'prepare', 'activate', 'list', 'inventory']
+        choices: ['create', 'zap', 'batch', 'prepare', 'activate', 'list']
         default: create
     data:
         description:
@@ -128,10 +127,6 @@ options:
         description:
             - List potential Ceph LVM metadata on a device
         required: false
-    inventory:
-        description:
-            - List storage device inventory.
-        required: false
 
 author:
     - Andrew Schoen (@andrewschoen)
@@ -213,7 +208,8 @@ def build_ceph_volume_cmd(action, container_image, cluster=None):
     if cluster:
         cmd.extend(['--cluster', cluster])
 
-    cmd.extend(action if not isinstance(action, six.string_types) else [action])
+    cmd.append('lvm')
+    cmd.append(action)
 
     return cmd
 
@@ -289,7 +285,7 @@ def batch(module, container_image):
         fatal('batch_devices must be provided if action is "batch"', module)
 
     # Build the CLI
-    action = ['lvm', 'batch']
+    action = 'batch'
     cmd = build_ceph_volume_cmd(action, container_image, cluster)
     cmd.extend(['--%s' % objectstore])
     cmd.append('--yes')
@@ -360,7 +356,6 @@ def prepare_or_create_osd(module, action, container_image):
     dmcrypt = module.params.get('dmcrypt', None)
 
     # Build the CLI
-    action = ['lvm', action]
     cmd = build_ceph_volume_cmd(action, container_image, cluster)
     cmd.extend(['--%s' % objectstore])
     cmd.append('--data')
@@ -399,7 +394,7 @@ def list_osd(module, container_image):
     data = get_data(data, data_vg)
 
     # Build the CLI
-    action = ['lvm', 'list']
+    action = 'list'
     cmd = build_ceph_volume_cmd(action, container_image, cluster)
     if data:
         cmd.append(data)
@@ -407,16 +402,6 @@ def list_osd(module, container_image):
 
     return cmd
 
-def list_storage_inventory(module, container_image):
-    '''
-    List storage inventory.
-    '''
-
-    action = 'inventory'
-    cmd = build_ceph_volume_cmd(action, container_image)
-    cmd.append('--format=json')
-
-    return cmd
 
 def activate_osd():
     '''
@@ -424,7 +409,7 @@ def activate_osd():
     '''
 
     # build the CLI
-    action = ['lvm', 'activate']
+    action = 'activate'
     container_image = None
     cmd = build_ceph_volume_cmd(action, container_image)
     cmd.append('--all')
@@ -452,7 +437,7 @@ def zap_devices(module, container_image):
     data = get_data(data, data_vg)
 
     # build the CLI
-    action = ['lvm', 'zap']
+    action = 'zap'
     cmd = build_ceph_volume_cmd(action, container_image)
     cmd.append('--destroy')
     cmd.append(data)
@@ -478,8 +463,7 @@ def run_module():
         objectstore=dict(type='str', required=False, choices=[
                          'bluestore', 'filestore'], default='bluestore'),
         action=dict(type='str', required=False, choices=[
-                    'create', 'zap', 'batch', 'prepare', 'activate', 'list',
-                    'inventory'], default='create'),  # noqa 4502
+                    'create', 'zap', 'batch', 'prepare', 'activate', 'list'], default='create'),  # noqa 4502
         data=dict(type='str', required=False),
         data_vg=dict(type='str', required=False),
         journal=dict(type='str', required=False),
@@ -575,11 +559,6 @@ def run_module():
         rc, cmd, out, err = exec_command(
             module, list_osd(module, container_image))
 
-    elif action == 'inventory':
-        # List storage device inventory.
-        rc, cmd, out, err = exec_command(
-            module, list_storage_inventory(module, container_image))
-
     elif action == 'batch':
         # Batch prepare AND activate OSDs
         report = module.params.get('report', None)
@@ -632,7 +611,7 @@ def run_module():
 
     else:
         module.fail_json(
-            msg='State must either be "create" or "prepare" or "activate" or "list" or "zap" or "batch" or "inventory".', changed=False, rc=1)  # noqa E501
+            msg='State must either be "create" or "prepare" or "activate" or "list" or "zap" or "batch".', changed=False, rc=1)  # noqa E501
 
     endd = datetime.datetime.now()
     delta = endd - startd

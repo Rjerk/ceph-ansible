@@ -29,8 +29,6 @@
     package:
       name: lvm2
       state: present
-    register: result
-    until: result is succeeded
 
 # BEGIN TEARDOWN
   - name: find any existing osd filesystems

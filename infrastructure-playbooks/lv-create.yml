@@ -38,8 +38,6 @@
     package:
       name: lvm2
       state: present
-    register: result
-    until: result is succeeded
 
   # Make entire nvme device a VG
   - name: add nvme device as lvm pv

@@ -396,7 +396,7 @@
         exit 1
       fi
       sgdisk -Z --clear --mbrtogpt -g -- /dev/"{{ item }}"
-      dd if=/dev/zero of=/dev/"{{ item }}" bs=1M count=200
+      dd if=/dev/zero of=/dev/"{{ item }}" bs=1M count=300
       parted -s /dev/"{{ item }}" mklabel gpt
       partprobe /dev/"{{ item }}"
       udevadm settle --timeout=600

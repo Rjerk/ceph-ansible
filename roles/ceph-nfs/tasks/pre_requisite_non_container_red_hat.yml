@@ -40,8 +40,6 @@
       package:
         name: nfs-ganesha-ceph
         state: "{{ (upgrade_ceph_packages|bool) | ternary('latest','present') }}"
-      register: result
-      until: result is succeeded
       when:
         - nfs_file_gw
 
@@ -49,7 +47,5 @@
       package:
         name: ['nfs-ganesha-rgw', 'ceph-radosgw']
         state: "{{ (upgrade_ceph_packages|bool) | ternary('latest','present') }}"
-      register: result
-      until: result is succeeded
       when:
         - nfs_obj_gw
